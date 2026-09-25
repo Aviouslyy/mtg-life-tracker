@@ -1,7 +1,7 @@
 package io.github.aviouslyy.lifetracker.ui
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -45,19 +45,20 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.text.PlatformTextStyle
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import io.github.aviouslyy.lifetracker.Counter
 import io.github.aviouslyy.lifetracker.GameState
@@ -69,6 +70,15 @@ enum class Highlight { None, Cycling, Chosen }
 private const val SMALL_STEP = 1
 private const val BIG_STEP = 10
 private const val DELTA_VISIBLE_MS = 1500L
+
+private val PanelShape = RoundedCornerShape(22.dp)
+
+/** A fine light edge along the top of each panel, like light catching a polished stone. */
+private val EdgeHighlight = Brush.verticalGradient(
+    listOf(Color.White.copy(alpha = 0.22f), Color.White.copy(alpha = 0.04f), Color.Transparent)
+)
+
+private val LifeShadow = Shadow(color = Color.Black.copy(alpha = 0.35f), offset = Offset(0f, 8f), blurRadius = 28f)
 
 /**
  * One player's area, modelled on Carbon: tap above the life total to gain 1 and below it to lose 1,
@@ -87,14 +97,13 @@ fun PlayerPanel(
 ) {
     val player = state.players[seat]
     val eliminated = state.isEliminated(seat)
-    val baseColor = playerColor(player.colorIndex)
-    val color by animateColorAsState(
-        targetValue = if (eliminated) lerp(baseColor, Color.Black, 0.65f) else baseColor,
+    val dim by animateFloatAsState(
+        targetValue = if (eliminated) 0.62f else 0f,
         animationSpec = tween(500),
-        label = "panelColor",
+        label = "eliminatedDim",
     )
     val borderWidth by animateDpAsState(
-        targetValue = if (highlight == Highlight.None) 0.dp else 5.dp,
+        targetValue = if (highlight == Highlight.None) 0.dp else 3.dp,
         animationSpec = tween(120),
         label = "highlightBorder",
     )
@@ -124,13 +133,14 @@ fun PlayerPanel(
         showDelta(amount)
     }
 
-    val shape = RoundedCornerShape(16.dp)
     Box(
         modifier
             .rotateLayout(rotation)
-            .clip(shape)
-            .background(color)
-            .then(if (borderWidth > 0.dp) Modifier.border(borderWidth, Color.White, shape) else Modifier)
+            .clip(PanelShape)
+            .background(jewel(player.colorIndex).brush)
+            .drawBehind { if (dim > 0f) drawRect(Color.Black.copy(alpha = dim)) }
+            .border(1.dp, EdgeHighlight, PanelShape)
+            .then(if (borderWidth > 0.dp) Modifier.border(borderWidth, Gold, PanelShape) else Modifier)
     ) {
         AnimatedContent(
             targetState = sheetOpen,
@@ -186,11 +196,6 @@ private fun LifeView(
         animationSpec = tween(if (showDelta) 80 else 400),
         label = "deltaAlpha",
     )
-    val status = when {
-        highlight == Highlight.Chosen -> "GOES FIRST"
-        eliminated -> "OUT"
-        else -> null
-    }
 
     BoxWithConstraints(
         Modifier
@@ -210,9 +215,9 @@ private fun LifeView(
             },
         contentAlignment = Alignment.Center,
     ) {
-        val digitHeight = minOf(maxHeight * 0.36f, maxWidth * 0.3f)
+        val digitHeight = minOf(maxHeight * 0.38f, maxWidth * 0.3f)
         val lifeSize = with(LocalDensity.current) { digitHeight.toSp() }
-        val glyphOffset = digitHeight * 0.62f + 14.dp
+        val glyphOffset = digitHeight * 0.64f + 16.dp
 
         Column(Modifier.fillMaxSize()) {
             TapZone(
@@ -228,26 +233,49 @@ private fun LifeView(
         }
 
         Glyph("+", Modifier.offset(y = -glyphOffset))
-        if (status == null) Glyph("−", Modifier.offset(y = glyphOffset))
+        // The status pill takes the place of the "−" hint below the total.
+        when {
+            highlight == Highlight.Chosen ->
+                StatusPill("GOES FIRST", background = Gold, color = OnGold, modifier = Modifier.offset(y = glyphOffset))
+            eliminated ->
+                StatusPill("OUT", background = Color.Black.copy(alpha = 0.35f), color = Color.White, modifier = Modifier.offset(y = glyphOffset))
+            else -> Glyph("−", Modifier.offset(y = glyphOffset))
+        }
 
-        Text(
-            text = player.life.toString(),
-            color = Color.White,
-            fontSize = lifeSize,
-            fontWeight = FontWeight.Bold,
-            style = NumberStyle,
-        )
+        // Gains roll up into place, losses roll down.
+        AnimatedContent(
+            targetState = player.life,
+            transitionSpec = {
+                val up = targetState > initialState
+                (slideInVertically(tween(160)) { if (up) it / 3 else -it / 3 } + fadeIn(tween(160))) togetherWith
+                    (slideOutVertically(tween(160)) { if (up) -it / 3 else it / 3 } + fadeOut(tween(120))) using
+                    SizeTransform(clip = false)
+            },
+            label = "life",
+        ) { life ->
+            Text(
+                text = if (life < 0) "−${-life}" else life.toString(),
+                color = Color.White,
+                fontSize = lifeSize,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = (-0.02).em,
+                style = NumberStyle.copy(shadow = LifeShadow),
+            )
+        }
 
         Text(
             text = if (delta >= 0) "+$delta" else "−${-delta}",
             color = Color.White,
-            fontSize = 26.sp,
+            fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold,
             style = NumberStyle,
             modifier = Modifier
                 .align(Alignment.CenterEnd)
-                .padding(end = 18.dp)
-                .alpha(deltaAlpha),
+                .padding(end = 14.dp)
+                .alpha(deltaAlpha)
+                .clip(RoundedCornerShape(50))
+                .background(Color.Black.copy(alpha = 0.25f))
+                .padding(horizontal = 10.dp, vertical = 5.dp),
         )
 
         CounterBadges(
@@ -255,72 +283,70 @@ private fun LifeView(
             seat = seat,
             modifier = Modifier
                 .align(Alignment.CenterStart)
-                .padding(start = 10.dp),
+                .padding(start = 12.dp),
         )
 
+        // A panel's own bottom edge always faces the edge of the screen, well clear of the
+        // centre medallion, whatever the rotation.
         Text(
-            text = player.name,
-            color = Color.White.copy(alpha = 0.92f),
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Medium,
+            text = player.name.uppercase(),
+            color = Color.White.copy(alpha = 0.9f),
+            style = LabelStyle.copy(fontSize = 12.sp),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
-                .align(Alignment.TopStart)
+                .align(Alignment.BottomStart)
                 .padding(8.dp)
-                .widthIn(max = maxWidth * 0.4f)
+                .widthIn(max = maxWidth * 0.36f)
                 .clip(RoundedCornerShape(50))
                 .clickable(onClick = onOpenSheet)
-                .background(Color.Black.copy(alpha = 0.18f))
-                .padding(horizontal = 12.dp, vertical = 6.dp),
+                .background(Color.Black.copy(alpha = 0.16f))
+                .padding(horizontal = 12.dp, vertical = 7.dp),
         )
-
-        if (status != null) {
-            Text(
-                text = status,
-                color = Color.Black,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.5.sp,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 10.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(Color.White)
-                    .padding(horizontal = 12.dp, vertical = 5.dp),
-            )
-        }
     }
+}
+
+@Composable
+private fun StatusPill(text: String, background: Color, color: Color, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        color = color,
+        style = LabelStyle.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold),
+        modifier = modifier
+            .clip(RoundedCornerShape(50))
+            .background(background)
+            .padding(horizontal = 14.dp, vertical = 6.dp),
+    )
 }
 
 /** Small read-only badges beside the life total for every counter that is in use. */
 @Composable
 private fun CounterBadges(state: GameState, seat: Int, modifier: Modifier = Modifier) {
     val player = state.players[seat]
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        if (state.monarch == seat) Badge("Monarch")
-        if (player.citysBlessing) Badge("Blessing")
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        if (state.monarch == seat) Badge("MONARCH", gold = true)
+        if (player.citysBlessing) Badge("BLESSING", gold = true)
         Counter.entries.forEach { counter ->
             val value = player.counter(counter)
-            if (value > 0) Badge("${counter.short} $value")
+            if (value > 0) Badge("${counter.short.uppercase()}  $value")
         }
         player.commanderDamage.toSortedMap().forEach { (source, value) ->
             if (value > 0 && source < state.playerCount) {
-                Badge("Cmdr $value", dot = playerColor(state.players[source].colorIndex))
+                Badge("CMDR  $value", dot = playerColor(state.players[source].colorIndex))
             }
         }
     }
 }
 
 @Composable
-private fun Badge(text: String, dot: Color? = null) {
+private fun Badge(text: String, dot: Color? = null, gold: Boolean = false) {
     Row(
         Modifier
             .clip(RoundedCornerShape(50))
-            .background(Color.Black.copy(alpha = 0.22f))
-            .padding(horizontal = 8.dp, vertical = 3.dp),
+            .background(if (gold) Gold else Color.Black.copy(alpha = 0.24f))
+            .padding(horizontal = 9.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(5.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         if (dot != null) {
             Box(
@@ -328,10 +354,14 @@ private fun Badge(text: String, dot: Color? = null) {
                     .size(9.dp)
                     .clip(CircleShape)
                     .background(dot)
-                    .border(1.dp, Color.White.copy(alpha = 0.8f), CircleShape)
+                    .border(1.dp, Color.White.copy(alpha = 0.85f), CircleShape)
             )
         }
-        Text(text, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, style = NumberStyle)
+        Text(
+            text = text,
+            color = if (gold) OnGold else Color.White,
+            style = LabelStyle.copy(fontSize = 10.sp, letterSpacing = 1.2.sp, fontFeatureSettings = "tnum"),
+        )
     }
 }
 
@@ -339,9 +369,9 @@ private fun Badge(text: String, dot: Color? = null) {
 private fun Glyph(symbol: String, modifier: Modifier = Modifier) {
     Text(
         text = symbol,
-        color = Color.White.copy(alpha = 0.4f),
-        fontSize = 22.sp,
-        fontWeight = FontWeight.Light,
+        color = Color.White.copy(alpha = 0.32f),
+        fontSize = 24.sp,
+        fontWeight = FontWeight.Normal,
         style = NumberStyle,
         modifier = modifier,
     )
@@ -365,9 +395,9 @@ private fun TapZone(
             .pointerInput(Unit) {
                 detectTapGestures(
                     onPress = {
-                        scope.launch { flash.snapTo(0.1f) }
+                        scope.launch { flash.snapTo(0.08f) }
                         tryAwaitRelease()
-                        scope.launch { flash.animateTo(0f, tween(300)) }
+                        scope.launch { flash.animateTo(0f, tween(320)) }
                     },
                     onTap = {
                         haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -381,11 +411,6 @@ private fun TapZone(
             }
     )
 }
-
-val NumberStyle = TextStyle(
-    fontFeatureSettings = "tnum",
-    platformStyle = PlatformTextStyle(includeFontPadding = false),
-)
 
 /**
  * Rotates content by a multiple of 90 degrees. Unlike [Modifier.rotate], a quarter turn also swaps

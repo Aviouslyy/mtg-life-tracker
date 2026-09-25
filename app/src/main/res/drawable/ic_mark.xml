@@ -1,56 +1,60 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Onyx brand mark: a faceted black gem with gold edges, inside the adaptive icon safe zone. -->
+<!-- The Onyx gem, cropped tightly for use inside the app. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
+    android:width="28dp"
+    android:height="26dp"
+    android:viewportWidth="60"
+    android:viewportHeight="54">
+    <group
+        android:translateX="-24"
+        android:translateY="-30">
         <path
             android:fillColor="#FF3A3A46"
             android:strokeColor="#FFD8B36A"
-            android:strokeWidth="1.6"
+            android:strokeWidth="2.2"
             android:strokeLineJoin="round"
             android:pathData="M39,32 L26,45 L41,45 Z" />
         <path
             android:fillColor="#FF5A5A6A"
             android:strokeColor="#FFD8B36A"
-            android:strokeWidth="1.6"
+            android:strokeWidth="2.2"
             android:strokeLineJoin="round"
             android:pathData="M39,32 L41,45 L54,32 Z" />
         <path
             android:fillColor="#FF44444F"
             android:strokeColor="#FFD8B36A"
-            android:strokeWidth="1.6"
+            android:strokeWidth="2.2"
             android:strokeLineJoin="round"
             android:pathData="M54,32 L41,45 L67,45 Z" />
         <path
             android:fillColor="#FF6C6C7E"
             android:strokeColor="#FFD8B36A"
-            android:strokeWidth="1.6"
+            android:strokeWidth="2.2"
             android:strokeLineJoin="round"
             android:pathData="M54,32 L67,45 L69,32 Z" />
         <path
             android:fillColor="#FF26262E"
             android:strokeColor="#FFD8B36A"
-            android:strokeWidth="1.6"
+            android:strokeWidth="2.2"
             android:strokeLineJoin="round"
             android:pathData="M69,32 L67,45 L82,45 Z" />
         <path
             android:fillColor="#FF2C2C35"
             android:strokeColor="#FFD8B36A"
-            android:strokeWidth="1.6"
+            android:strokeWidth="2.2"
             android:strokeLineJoin="round"
             android:pathData="M26,45 L41,45 L54,82 Z" />
         <path
             android:fillColor="#FF1C1C23"
             android:strokeColor="#FFD8B36A"
-            android:strokeWidth="1.6"
+            android:strokeWidth="2.2"
             android:strokeLineJoin="round"
             android:pathData="M41,45 L67,45 L54,82 Z" />
         <path
             android:fillColor="#FF111116"
             android:strokeColor="#FFD8B36A"
-            android:strokeWidth="1.6"
+            android:strokeWidth="2.2"
             android:strokeLineJoin="round"
             android:pathData="M67,45 L82,45 L54,82 Z" />
+    </group>
 </vector>

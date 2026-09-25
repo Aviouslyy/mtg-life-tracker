@@ -78,15 +78,14 @@ fun PlayerSheet(
     Column(
         Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.3f))
-            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .background(Color.Black.copy(alpha = 0.45f))
+            .padding(horizontal = 12.dp, vertical = 10.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = player.name,
+                text = player.name.uppercase(),
                 color = Color.White,
-                fontSize = 17.sp,
-                fontWeight = FontWeight.SemiBold,
+                style = LabelStyle.copy(fontSize = 13.sp),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
@@ -127,8 +126,9 @@ fun PlayerSheet(
 private fun CounterRow(row: SheetRow, modifier: Modifier = Modifier) {
     Row(
         modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color.Black.copy(alpha = 0.2f))
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color.Black.copy(alpha = 0.22f))
+            .border(1.dp, Hairline, RoundedCornerShape(14.dp))
             .padding(start = 12.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -154,8 +154,8 @@ private fun CounterRow(row: SheetRow, modifier: Modifier = Modifier) {
         Text(
             text = row.value.toString(),
             color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
+            fontSize = 19.sp,
+            fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.Center,
             style = NumberStyle,
             modifier = Modifier.width(40.dp),
@@ -170,7 +170,8 @@ private fun StepButton(symbol: String, onClick: () -> Unit) {
         Modifier
             .size(36.dp)
             .clip(CircleShape)
-            .background(Color.White.copy(alpha = 0.14f))
+            .background(Color.White.copy(alpha = 0.1f))
+            .border(1.dp, Color.White.copy(alpha = 0.14f), CircleShape)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
@@ -183,14 +184,15 @@ private fun Toggle(label: String, on: Boolean, modifier: Modifier = Modifier, on
     Box(
         modifier
             .height(40.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(if (on) Color.White else Color.Black.copy(alpha = 0.2f))
+            .clip(RoundedCornerShape(14.dp))
+            .background(if (on) Gold else Color.Black.copy(alpha = 0.22f))
+            .border(1.dp, if (on) Gold else Hairline, RoundedCornerShape(14.dp))
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = label,
-            color = if (on) Color.Black else Color.White,
+            color = if (on) OnGold else Color.White,
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
@@ -204,7 +206,8 @@ private fun RoundIconButton(onClick: () -> Unit, content: @Composable () -> Unit
         Modifier
             .size(36.dp)
             .clip(CircleShape)
-            .background(Color.White.copy(alpha = 0.14f))
+            .background(Color.White.copy(alpha = 0.1f))
+            .border(1.dp, Color.White.copy(alpha = 0.14f), CircleShape)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {

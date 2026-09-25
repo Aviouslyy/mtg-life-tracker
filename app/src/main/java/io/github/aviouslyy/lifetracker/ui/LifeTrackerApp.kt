@@ -1,5 +1,6 @@
 package io.github.aviouslyy.lifetracker.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,9 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,9 +26,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import io.github.aviouslyy.lifetracker.GameState
+import io.github.aviouslyy.lifetracker.R
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -94,21 +94,22 @@ fun LifeTrackerApp(state: GameState) {
             )
         }
 
+        // The brand medallion doubles as the menu button.
         Box(
             Modifier
                 .align(Alignment.Center)
-                .size(52.dp)
+                .size(56.dp)
+                .shadow(12.dp, CircleShape)
                 .clip(CircleShape)
                 .background(Background)
-                .border(2.dp, Muted, CircleShape)
+                .border(1.5.dp, GoldRing, CircleShape)
                 .clickable { showMenu = true },
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                imageVector = Icons.Rounded.Settings,
+            Image(
+                painter = painterResource(R.drawable.ic_mark),
                 contentDescription = "Game menu",
-                tint = Color.White,
-                modifier = Modifier.size(26.dp),
+                modifier = Modifier.size(width = 26.dp, height = 24.dp),
             )
         }
     }

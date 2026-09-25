@@ -1,6 +1,6 @@
-# MTG Life Tracker
+# Onyx — MTG Life Counter
 
-A clean, simple life counter for Magic: The Gathering on Android.
+A polished, simple life counter for Magic: The Gathering on Android.
 
 ## Download
 
@@ -21,11 +21,10 @@ the MTG life counter a lot of players liked:
   Commander damage also comes off the life total. Counters in use show as small badges beside the life total.
 - A player whose life reaches 0, who has 10 poison, or who has taken 21 damage from one commander is
   dimmed and marked **OUT**.
-- **Tap the ⚙ button** in the middle to:
+- **Tap the gold medallion** in the middle to:
   - choose 2–6 players and 20, 30 or 40 starting life
-  - see how long the game has been running
   - roll a d6 or d20, flip a coin, or randomly pick who goes first
-  - open the **history**, where quick taps are merged ("−3", not "−1 −1 −1")
+  - open the **game history**, where quick taps are merged ("−3", not "−1 −1 −1")
   - start a new game
 
 Panels turn to face each player: with two players the top panel is upside down, and with three or more
@@ -51,3 +50,8 @@ CI builds, has the same signature and installs as an update over the previous on
 so it only suits a sideloaded hobby app. Before publishing to the Play Store, generate a private keystore
 and supply its passwords through the `SIGNING_STORE_PASSWORD`, `SIGNING_KEY_ALIAS` and
 `SIGNING_KEY_PASSWORD` environment variables.
+
+## Credits
+
+The app uses the [Outfit](https://github.com/Outfitio/Outfit-Fonts) typeface, licensed under the
+SIL Open Font License 1.1 (see `licenses/OFL-Outfit.txt`).

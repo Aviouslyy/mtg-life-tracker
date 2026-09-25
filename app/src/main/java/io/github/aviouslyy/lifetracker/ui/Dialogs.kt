@@ -1,6 +1,8 @@
 package io.github.aviouslyy.lifetracker.ui
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -24,10 +27,9 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -36,13 +38,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -53,11 +55,12 @@ import androidx.compose.ui.window.Dialog
 import io.github.aviouslyy.lifetracker.GameState
 import io.github.aviouslyy.lifetracker.HistoryEntry
 import io.github.aviouslyy.lifetracker.Player
+import io.github.aviouslyy.lifetracker.R
 import kotlin.random.Random
-import kotlinx.coroutines.delay
 
 private val StartingLifeOptions = listOf(20, 30, 40)
 private const val MAX_NAME_LENGTH = 20
+private val DialogShape = RoundedCornerShape(28.dp)
 
 /** [id] makes a repeated identical result (two 7s in a row) still animate. */
 private data class RollResult(val id: Int, val text: String)
@@ -77,15 +80,13 @@ fun GameMenuDialog(
     }
 
     Dialog(onDismissRequest = onDismiss) {
-        Surface(shape = RoundedCornerShape(28.dp), color = DialogSurface, contentColor = Color.White) {
+        BrandSurface {
             Column(
                 Modifier.padding(24.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text("Game", fontSize = 24.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                    GameTimer(state.startedAt)
-                }
+                Wordmark()
+                HorizontalDivider(color = Hairline)
 
                 Labeled("Players") {
                     Segmented(
@@ -106,12 +107,12 @@ fun GameMenuDialog(
                             state.changeStartingLife(it)
                         },
                     )
+                    Text(
+                        "Changing either starts a new game.",
+                        fontSize = 12.sp,
+                        color = TextSecondary,
+                    )
                 }
-                Text(
-                    "Changing players or starting life starts a new game.",
-                    fontSize = 12.sp,
-                    color = Color.White.copy(alpha = 0.5f),
-                )
 
                 Labeled("Random") {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -124,21 +125,49 @@ fun GameMenuDialog(
                     Crossfade(targetState = roll, label = "roll") { result ->
                         Text(
                             text = result?.text ?: "",
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.Bold,
+                            color = Gold,
+                            fontSize = 30.sp,
+                            fontWeight = FontWeight.SemiBold,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth().height(if (result == null) 0.dp else 44.dp),
+                            style = NumberStyle,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(if (result == null) 0.dp else 44.dp)
+                                .padding(top = 6.dp),
                         )
                     }
                     Chip("Pick who goes first", Modifier.fillMaxWidth(), onClick = onPickFirstPlayer)
                 }
 
-                Chip("History", Modifier.fillMaxWidth(), onClick = onShowHistory)
+                Chip("Game history", Modifier.fillMaxWidth(), onClick = onShowHistory)
 
                 Button(onClick = onNewGame, modifier = Modifier.fillMaxWidth().height(52.dp)) {
-                    Text("New game", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    Text("NEW GAME", style = LabelStyle.copy(fontSize = 14.sp, fontWeight = FontWeight.Bold))
                 }
             }
+        }
+    }
+}
+
+/** The Onyx gem and wordmark. */
+@Composable
+private fun Wordmark() {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Image(
+            painter = painterResource(R.drawable.ic_mark),
+            contentDescription = null,
+            modifier = Modifier.size(width = 30.dp, height = 28.dp),
+        )
+        Spacer(Modifier.width(14.dp))
+        Column {
+            Text(
+                "ONYX",
+                color = Gold,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 7.sp,
+            )
+            Text("LIFE COUNTER", color = TextSecondary, style = LabelStyle.copy(fontSize = 10.sp, letterSpacing = 2.5.sp))
         }
     }
 }
@@ -153,12 +182,10 @@ fun EditPlayerDialog(
     var colorIndex by remember { mutableIntStateOf(player.colorIndex) }
     val save = { onSave(name.trim().ifEmpty { player.name }, colorIndex) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = DialogSurface,
-        title = { Text("Edit player") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+    Dialog(onDismissRequest = onDismiss) {
+        BrandSurface {
+            Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                Text("PLAYER", color = TextSecondary, style = LabelStyle)
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it.take(MAX_NAME_LENGTH) },
@@ -169,133 +196,78 @@ fun EditPlayerDialog(
                         imeAction = ImeAction.Done,
                     ),
                     keyboardActions = KeyboardActions(onDone = { save() }),
+                    shape = RoundedCornerShape(14.dp),
                     modifier = Modifier.fillMaxWidth(),
                 )
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    PlayerColors.indices.chunked(4).forEach { row ->
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            row.forEach { i ->
-                                ColorSwatch(
-                                    color = PlayerColors[i],
-                                    selected = i == colorIndex,
-                                    onClick = { colorIndex = i },
-                                    modifier = Modifier.weight(1f),
-                                )
+                Labeled("Color") {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        PlayerColors.indices.chunked(4).forEach { row ->
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                row.forEach { i ->
+                                    ColorSwatch(
+                                        jewel = PlayerColors[i],
+                                        selected = i == colorIndex,
+                                        onClick = { colorIndex = i },
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                }
                             }
                         }
                     }
                 }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = onDismiss) { Text("Cancel", color = TextSecondary) }
+                    Spacer(Modifier.width(8.dp))
+                    Button(onClick = save) { Text("Save", fontWeight = FontWeight.SemiBold) }
+                }
             }
-        },
-        confirmButton = { TextButton(onClick = save) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
-    )
+        }
+    }
 }
 
 @Composable
-private fun ColorSwatch(color: Color, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun ColorSwatch(jewel: Jewel, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    // A gold ring sits just outside the selected stone.
     Box(
         modifier
             .aspectRatio(1f)
             .clip(CircleShape)
-            .background(color)
-            .then(if (selected) Modifier.border(3.dp, Color.White, CircleShape) else Modifier)
-            .clickable(onClick = onClick),
+            .then(if (selected) Modifier.border(2.dp, Gold, CircleShape) else Modifier)
+            .clickable(onClick = onClick)
+            .padding(5.dp),
         contentAlignment = Alignment.Center,
     ) {
-        if (selected) {
-            Icon(Icons.Rounded.Check, contentDescription = "Selected", tint = Color.White, modifier = Modifier.size(22.dp))
-        }
-    }
-}
-
-@Composable
-private fun Labeled(label: String, content: @Composable () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(label, fontSize = 13.sp, color = Color.White.copy(alpha = 0.6f), fontWeight = FontWeight.Medium)
-        content()
-    }
-}
-
-@Composable
-private fun Segmented(options: List<Int>, selected: Int, onSelect: (Int) -> Unit) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(Muted)
-            .padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        options.forEach { option ->
-            val isSelected = option == selected
-            Box(
-                Modifier
-                    .weight(1f)
-                    .height(40.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
-                    .clickable { onSelect(option) },
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = option.toString(),
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else Color.White,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 16.sp,
-                )
+        Box(
+            Modifier
+                .fillMaxSize()
+                .clip(CircleShape)
+                .background(jewel.brush)
+                .border(1.dp, Color.White.copy(alpha = 0.15f), CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (selected) {
+                Icon(Icons.Rounded.Check, contentDescription = "${jewel.name}, selected", tint = Color.White, modifier = Modifier.size(20.dp))
             }
         }
     }
-}
-
-@Composable
-private fun Chip(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Box(
-        modifier
-            .height(44.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(Muted)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(text, fontWeight = FontWeight.Medium, fontSize = 15.sp)
-    }
-}
-
-/** Time since the game started, ticking every second. */
-@Composable
-private fun GameTimer(startedAt: Long) {
-    val now by produceState(System.currentTimeMillis(), startedAt) {
-        while (true) {
-            value = System.currentTimeMillis()
-            delay(1000)
-        }
-    }
-    Text(
-        text = formatDuration(now - startedAt),
-        fontSize = 18.sp,
-        color = Color.White.copy(alpha = 0.6f),
-        style = NumberStyle,
-    )
 }
 
 @Composable
 fun HistoryDialog(state: GameState, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
-        Surface(shape = RoundedCornerShape(28.dp), color = DialogSurface, contentColor = Color.White) {
+        BrandSurface {
             Column(Modifier.padding(vertical = 24.dp)) {
                 Text(
-                    "History",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    "GAME HISTORY",
+                    color = TextSecondary,
+                    style = LabelStyle,
                     modifier = Modifier.padding(horizontal = 24.dp),
                 )
                 Spacer(Modifier.height(12.dp))
                 if (state.history.isEmpty()) {
                     Text(
                         "Nothing has happened yet this game.",
-                        color = Color.White.copy(alpha = 0.6f),
+                        color = TextSecondary,
                         modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
                     )
                 } else {
@@ -316,16 +288,21 @@ fun HistoryDialog(state: GameState, onDismiss: () -> Unit) {
 @Composable
 private fun HistoryRow(state: GameState, entry: HistoryEntry) {
     val player = state.players[entry.seat]
+    val amountColor = when {
+        entry.kind != "life" -> Color.White
+        entry.amount > 0 -> Gain
+        else -> Loss
+    }
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 8.dp),
+            .padding(horizontal = 24.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = formatDuration(entry.time - state.startedAt),
-            fontSize = 13.sp,
-            color = Color.White.copy(alpha = 0.5f),
+            fontSize = 12.sp,
+            color = TextSecondary,
             style = NumberStyle,
             modifier = Modifier.width(52.dp),
         )
@@ -333,32 +310,96 @@ private fun HistoryRow(state: GameState, entry: HistoryEntry) {
             Modifier
                 .size(10.dp)
                 .clip(CircleShape)
-                .background(playerColor(player.colorIndex))
+                .background(jewel(player.colorIndex).brush)
         )
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(player.name, fontSize = 15.sp, fontWeight = FontWeight.Medium, maxLines = 1)
-            Text(
-                state.describe(entry.kind),
-                fontSize = 12.sp,
-                color = Color.White.copy(alpha = 0.6f),
-                maxLines = 1,
-            )
+            Text(state.describe(entry.kind), fontSize = 12.sp, color = TextSecondary, maxLines = 1)
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(
                 text = if (entry.amount > 0) "+${entry.amount}" else "−${-entry.amount}",
+                color = amountColor,
                 fontSize = 17.sp,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.SemiBold,
                 style = NumberStyle,
             )
             Text(
                 text = "→ ${entry.valueAfter}",
                 fontSize = 12.sp,
-                color = Color.White.copy(alpha = 0.6f),
+                color = TextSecondary,
                 style = NumberStyle,
             )
         }
+    }
+}
+
+@Composable
+private fun BrandSurface(content: @Composable () -> Unit) {
+    Surface(
+        shape = DialogShape,
+        color = DialogSurface,
+        contentColor = Color.White,
+        border = BorderStroke(1.dp, Hairline),
+        content = content,
+    )
+}
+
+@Composable
+private fun Labeled(label: String, content: @Composable () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(label.uppercase(), color = TextSecondary, style = LabelStyle)
+        content()
+    }
+}
+
+@Composable
+private fun Segmented(options: List<Int>, selected: Int, onSelect: (Int) -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color.Black.copy(alpha = 0.35f))
+            .border(1.dp, Hairline, RoundedCornerShape(16.dp))
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        options.forEach { option ->
+            val isSelected = option == selected
+            Box(
+                Modifier
+                    .weight(1f)
+                    .height(40.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(if (isSelected) Gold else Color.Transparent)
+                    .clickable { onSelect(option) },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = option.toString(),
+                    color = if (isSelected) OnGold else Color.White,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 16.sp,
+                    style = NumberStyle,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun Chip(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Box(
+        modifier
+            .height(46.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(Muted)
+            .border(1.dp, Hairline, RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text, fontWeight = FontWeight.Medium, fontSize = 15.sp)
     }
 }
 
