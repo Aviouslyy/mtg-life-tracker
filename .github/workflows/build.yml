@@ -1,0 +1,45 @@
+name: Build APK
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build release APK
+        run: ./gradlew assembleRelease -PversionCode=${{ github.run_number }}
+
+      - name: Rename APK
+        run: cp app/build/outputs/apk/release/app-release.apk mtg-life-tracker.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mtg-life-tracker
+          path: mtg-life-tracker.apk
+
+      # Every build of the default branch becomes a release, so
+      # .../releases/latest/download/mtg-life-tracker.apk always serves the newest APK.
+      - name: Publish release
+        if: github.event_name != 'pull_request' && github.ref_name == github.event.repository.default_branch
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: Life Tracker 1.0.${{ github.run_number }}
+          body: |
+            Download **mtg-life-tracker.apk** below and open it on your Android phone to install.
+          files: mtg-life-tracker.apk
