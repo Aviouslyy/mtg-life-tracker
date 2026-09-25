@@ -33,8 +33,8 @@ saved if you leave the app.
 
 ## Building
 
-Every push is built by GitHub Actions (`.github/workflows/build.yml`), and every build of the default
-branch is published as a GitHub release.
+Every push is built by GitHub Actions (`.github/workflows/build.yml`), and every build of `main` is
+published as a GitHub release.
 
 To build locally you need JDK 17 and the Android SDK:
 
