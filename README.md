@@ -11,14 +11,21 @@ browser or file manager the first time. Requires Android 8.0 or newer.
 
 ## How to use
 
-- **Tap** the right half of a player's panel to gain 1 life, the left half to lose 1.
-- **Press and hold** to gain or lose 10.
-- A small badge above the total shows how much it just changed.
-- **Tap a player's name** to rename them or pick a different color.
+The controls follow [Carbon](https://apps.apple.com/us/app/carbon-mtg-tabletop-utility/id1209153225),
+the MTG life counter a lot of players liked:
+
+- **Tap above** a life total to gain 1, **tap below** it to lose 1. **Press and hold** for 10.
+  A badge beside the total shows how much it just changed.
+- **Swipe down** on a player (or tap their name) to open their counters: poison, energy, experience,
+  commander tax, storm, the monarch and the city's blessing, plus **commander damage from each opponent**.
+  Commander damage also comes off the life total. Counters in use show as small badges beside the life total.
+- A player whose life reaches 0, who has 10 poison, or who has taken 21 damage from one commander is
+  dimmed and marked **OUT**.
 - **Tap the ⚙ button** in the middle to:
   - choose 2–6 players and 20, 30 or 40 starting life
-  - roll a d6 or d20, or flip a coin
-  - randomly pick who goes first
+  - see how long the game has been running
+  - roll a d6 or d20, flip a coin, or randomly pick who goes first
+  - open the **history**, where quick taps are merged ("−3", not "−1 −1 −1")
   - start a new game
 
 Panels turn to face each player: with two players the top panel is upside down, and with three or more

@@ -41,6 +41,7 @@ private val Gap = 6.dp
 @Composable
 fun LifeTrackerApp(state: GameState) {
     var showMenu by remember { mutableStateOf(false) }
+    var showHistory by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<Int?>(null) }
     var highlighted by remember { mutableStateOf<Int?>(null) }
     var cycling by remember { mutableStateOf(false) }
@@ -80,15 +81,14 @@ fun LifeTrackerApp(state: GameState) {
     ) {
         PlayerGrid(state.playerCount) { index, rotation, modifier ->
             PlayerPanel(
-                player = state.players[index],
+                state = state,
+                seat = index,
                 rotation = rotation,
-                gameId = state.gameId,
                 highlight = when {
                     highlighted != index -> Highlight.None
                     cycling -> Highlight.Cycling
                     else -> Highlight.Chosen
                 },
-                onLifeChange = { state.changeLife(index, it) },
                 onEdit = { editing = index },
                 modifier = modifier,
             )
@@ -125,9 +125,17 @@ fun LifeTrackerApp(state: GameState) {
                 showMenu = false
                 pickFirstPlayer()
             },
+            onShowHistory = {
+                showMenu = false
+                showHistory = true
+            },
             onSettingsChanged = ::clearHighlight,
             onDismiss = { showMenu = false },
         )
+    }
+
+    if (showHistory) {
+        HistoryDialog(state = state, onDismiss = { showHistory = false })
     }
 
     editing?.let { index ->
