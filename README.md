@@ -17,8 +17,10 @@ the MTG life counter a lot of players liked:
 - **Tap above** a life total to gain 1, **tap below** it to lose 1. **Press and hold** for 10.
   A badge beside the total shows how much it just changed.
 - **Swipe down** on a player (or tap their name) to open their counters: poison, energy, experience,
-  commander tax, storm, the monarch and the city's blessing, plus **commander damage from each opponent**.
-  Commander damage also comes off the life total. Counters in use show as small badges beside the life total.
+  commander tax, storm, the monarch, the initiative and the city's blessing, plus **commander damage from
+  each opponent**. Commander damage also comes off the life total. Counters in use show as small badges
+  beside the life total.
+- **Tap the Monarch or Initiative badge** to pass it to another player (or to nobody).
 - A player whose life reaches 0, who has 10 poison, or who has taken 21 damage from one commander is
   dimmed and marked **OUT**.
 - **Tap the gold medallion** in the middle to:

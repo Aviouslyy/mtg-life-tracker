@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import io.github.aviouslyy.lifetracker.Counter
 import io.github.aviouslyy.lifetracker.GameState
+import io.github.aviouslyy.lifetracker.Marker
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -72,6 +73,13 @@ private const val BIG_STEP = 10
 private const val DELTA_VISIBLE_MS = 1500L
 
 private val PanelShape = RoundedCornerShape(22.dp)
+
+/** What a panel is showing: the life total, the counters sheet, or a picker to pass a [Marker] on. */
+private sealed interface PanelMode {
+    data object Life : PanelMode
+    data object Sheet : PanelMode
+    data class Pass(val marker: Marker) : PanelMode
+}
 
 /** A fine light edge along the top of each panel, like light catching a polished stone. */
 private val EdgeHighlight = Brush.verticalGradient(
@@ -108,7 +116,7 @@ fun PlayerPanel(
         label = "highlightBorder",
     )
 
-    var sheetOpen by remember(state.gameId) { mutableStateOf(false) }
+    var mode by remember(state.gameId) { mutableStateOf<PanelMode>(PanelMode.Life) }
 
     // Running total of recent life changes ("-3"), hidden shortly after the last one.
     var delta by remember(state.gameId) { mutableIntStateOf(0) }
@@ -143,9 +151,9 @@ fun PlayerPanel(
             .then(if (borderWidth > 0.dp) Modifier.border(borderWidth, Gold, PanelShape) else Modifier)
     ) {
         AnimatedContent(
-            targetState = sheetOpen,
+            targetState = mode,
             transitionSpec = {
-                if (targetState) {
+                if (targetState != PanelMode.Life) {
                     (slideInVertically { -it } + fadeIn()) togetherWith fadeOut()
                 } else {
                     fadeIn() togetherWith (slideOutVertically { -it } + fadeOut())
@@ -153,17 +161,22 @@ fun PlayerPanel(
             },
             label = "sheet",
             modifier = Modifier.fillMaxSize(),
-        ) { open ->
-            if (open) {
-                PlayerSheet(
+        ) { current ->
+            when (current) {
+                PanelMode.Sheet -> PlayerSheet(
                     state = state,
                     seat = seat,
                     onLifeChanged = showDelta,
                     onEdit = onEdit,
-                    onClose = { sheetOpen = false },
+                    onClose = { mode = PanelMode.Life },
                 )
-            } else {
-                LifeView(
+                is PanelMode.Pass -> PassMarkerSheet(
+                    state = state,
+                    seat = seat,
+                    marker = current.marker,
+                    onClose = { mode = PanelMode.Life },
+                )
+                PanelMode.Life -> LifeView(
                     state = state,
                     seat = seat,
                     eliminated = eliminated,
@@ -171,7 +184,8 @@ fun PlayerPanel(
                     delta = delta,
                     showDelta = deltaVisible && delta != 0,
                     onLifeChange = changeLife,
-                    onOpenSheet = { sheetOpen = true },
+                    onOpenSheet = { mode = PanelMode.Sheet },
+                    onPassMarker = { mode = PanelMode.Pass(it) },
                 )
             }
         }
@@ -188,6 +202,7 @@ private fun LifeView(
     showDelta: Boolean,
     onLifeChange: (Int) -> Unit,
     onOpenSheet: () -> Unit,
+    onPassMarker: (Marker) -> Unit,
 ) {
     val player = state.players[seat]
     val currentOnOpenSheet by rememberUpdatedState(onOpenSheet)
@@ -281,6 +296,7 @@ private fun LifeView(
         CounterBadges(
             state = state,
             seat = seat,
+            onPassMarker = onPassMarker,
             modifier = Modifier
                 .align(Alignment.CenterStart)
                 .padding(start = 12.dp),
@@ -319,12 +335,19 @@ private fun StatusPill(text: String, background: Color, color: Color, modifier: 
     )
 }
 
-/** Small read-only badges beside the life total for every counter that is in use. */
+/**
+ * Small badges beside the life total for every counter that is in use. Tapping the monarch or
+ * initiative badge offers to pass it to another player.
+ */
 @Composable
-private fun CounterBadges(state: GameState, seat: Int, modifier: Modifier = Modifier) {
+private fun CounterBadges(state: GameState, seat: Int, onPassMarker: (Marker) -> Unit, modifier: Modifier = Modifier) {
     val player = state.players[seat]
     Column(modifier, verticalArrangement = Arrangement.spacedBy(5.dp)) {
-        if (state.monarch == seat) Badge("MONARCH", gold = true)
+        Marker.entries.forEach { marker ->
+            if (state.holder(marker) == seat) {
+                Badge(marker.label.uppercase(), gold = true, onClick = { onPassMarker(marker) })
+            }
+        }
         if (player.citysBlessing) Badge("BLESSING", gold = true)
         Counter.entries.forEach { counter ->
             val value = player.counter(counter)
@@ -339,10 +362,11 @@ private fun CounterBadges(state: GameState, seat: Int, modifier: Modifier = Modi
 }
 
 @Composable
-private fun Badge(text: String, dot: Color? = null, gold: Boolean = false) {
+private fun Badge(text: String, dot: Color? = null, gold: Boolean = false, onClick: (() -> Unit)? = null) {
     Row(
         Modifier
             .clip(RoundedCornerShape(50))
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .background(if (gold) Gold else Color.Black.copy(alpha = 0.24f))
             .padding(horizontal = 9.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,

@@ -20,6 +20,12 @@ enum class Counter(val label: String, val short: String) {
     Storm("Storm", "Storm"),
 }
 
+/** Designations held by one player at a time, which pass between players during the game. */
+enum class Marker(val label: String) {
+    Monarch("Monarch"),
+    Initiative("Initiative"),
+}
+
 data class Player(
     val name: String,
     val life: Int,
@@ -61,6 +67,10 @@ class GameState(private val prefs: SharedPreferences, private val clock: () -> L
 
     /** Seat of the player who is the monarch, if anyone. */
     var monarch by mutableStateOf(prefs.getInt(KEY_MONARCH, -1).takeIf { it >= 0 })
+        private set
+
+    /** Seat of the player who has the initiative, if anyone. */
+    var initiative by mutableStateOf(prefs.getInt(KEY_INITIATIVE, -1).takeIf { it >= 0 })
         private set
 
     var startedAt by mutableLongStateOf(prefs.getLong(KEY_STARTED_AT, clock()))
@@ -114,9 +124,22 @@ class GameState(private val prefs: SharedPreferences, private val clock: () -> L
         return -applied
     }
 
-    fun toggleMonarch(seat: Int) {
-        monarch = if (monarch == seat) null else seat
+    fun holder(marker: Marker): Int? = when (marker) {
+        Marker.Monarch -> monarch
+        Marker.Initiative -> initiative
+    }
+
+    /** Hands [marker] to [seat], taking it from whoever had it; null means nobody has it. */
+    fun giveMarker(marker: Marker, seat: Int?) {
+        when (marker) {
+            Marker.Monarch -> monarch = seat
+            Marker.Initiative -> initiative = seat
+        }
         save()
+    }
+
+    fun toggleMarker(marker: Marker, seat: Int) {
+        giveMarker(marker, if (holder(marker) == seat) null else seat)
     }
 
     fun toggleCitysBlessing(seat: Int) {
@@ -151,6 +174,7 @@ class GameState(private val prefs: SharedPreferences, private val clock: () -> L
             )
         }
         monarch = null
+        initiative = null
         history.clear()
         startedAt = clock()
         gameId++
@@ -219,6 +243,7 @@ class GameState(private val prefs: SharedPreferences, private val clock: () -> L
             putInt(KEY_COUNT, playerCount)
             putInt(KEY_START, startingLife)
             putInt(KEY_MONARCH, monarch ?: -1)
+            putInt(KEY_INITIATIVE, initiative ?: -1)
             putLong(KEY_STARTED_AT, startedAt)
             putString(KEY_HISTORY, historyJson.toString())
             players.forEachIndexed { i, p ->
@@ -247,6 +272,7 @@ class GameState(private val prefs: SharedPreferences, private val clock: () -> L
         private const val KEY_COUNT = "player_count"
         private const val KEY_START = "starting_life"
         private const val KEY_MONARCH = "monarch"
+        private const val KEY_INITIATIVE = "initiative"
         private const val KEY_STARTED_AT = "started_at"
         private const val KEY_HISTORY = "history"
     }

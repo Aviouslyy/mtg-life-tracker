@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.aviouslyy.lifetracker.Counter
 import io.github.aviouslyy.lifetracker.GameState
+import io.github.aviouslyy.lifetracker.Marker
 
 /** A tracked value inside the sheet: its label, optional color dot, current value and how to change it. */
 private class SheetRow(
@@ -44,6 +45,8 @@ private class SheetRow(
     val dot: Color? = null,
     val onChange: (Int) -> Unit,
 )
+
+private class SheetToggle(val label: String, val on: Boolean, val onClick: () -> Unit)
 
 /**
  * A player's counters, drawn inside their own panel so it faces them like the life total does.
@@ -107,9 +110,15 @@ fun PlayerSheet(
                 Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Toggle("Monarch", state.monarch == seat, Modifier.weight(1f)) { state.toggleMonarch(seat) }
-                    Toggle("City's blessing", player.citysBlessing, Modifier.weight(1f)) { state.toggleCitysBlessing(seat) }
+                val toggles = Marker.entries.map { marker ->
+                    SheetToggle(marker.label, state.holder(marker) == seat) { state.toggleMarker(marker, seat) }
+                } + SheetToggle("City's blessing", player.citysBlessing) { state.toggleCitysBlessing(seat) }
+                val perLine = if (columns == 2) toggles.size else 2
+                toggles.chunked(perLine).forEach { line ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        line.forEach { Toggle(it.label, it.on, Modifier.weight(1f), it.onClick) }
+                        repeat(perLine - line.size) { Spacer(Modifier.weight(1f)) }
+                    }
                 }
                 rows.chunked(columns).forEach { line ->
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -119,6 +128,98 @@ fun PlayerSheet(
                 }
             }
         }
+    }
+}
+
+/**
+ * Asks who [marker] goes to next, drawn inside the current holder's panel so it faces them.
+ * Picking a player (or nobody) moves it and closes the picker.
+ */
+@Composable
+fun PassMarkerSheet(
+    state: GameState,
+    seat: Int,
+    marker: Marker,
+    onClose: () -> Unit,
+) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.45f))
+            .padding(horizontal = 12.dp, vertical = 10.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "PASS THE ${marker.label.uppercase()} TO",
+                color = Color.White,
+                style = LabelStyle.copy(fontSize = 13.sp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            RoundIconButton(onClick = onClose) {
+                Icon(Icons.Rounded.Close, contentDescription = "Close", tint = Color.White, modifier = Modifier.size(22.dp))
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+
+        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+            val columns = if (maxWidth >= 380.dp) 3 else 2
+            val choices: List<Int?> = (0 until state.playerCount).filter { it != seat } + null
+            Column(
+                Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                choices.chunked(columns).forEach { line ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        line.forEach { target ->
+                            PlayerChoice(
+                                label = target?.let { state.players[it].name } ?: "Nobody",
+                                dot = target?.let { playerColor(state.players[it].colorIndex) },
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                state.giveMarker(marker, target)
+                                onClose()
+                            }
+                        }
+                        repeat(columns - line.size) { Spacer(Modifier.weight(1f)) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlayerChoice(label: String, dot: Color?, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Row(
+        modifier
+            .height(48.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color.Black.copy(alpha = 0.22f))
+            .border(1.dp, Hairline, RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (dot != null) {
+            Box(
+                Modifier
+                    .size(12.dp)
+                    .clip(CircleShape)
+                    .background(dot)
+                    .border(1.dp, Color.White.copy(alpha = 0.8f), CircleShape)
+            )
+            Spacer(Modifier.width(10.dp))
+        }
+        Text(
+            text = label,
+            color = if (dot != null) Color.White else Color.White.copy(alpha = 0.7f),
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
